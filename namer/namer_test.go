@@ -21,12 +21,8 @@ func TestFromPath(t *testing.T) {
 
 		t.Run("name for git repo", func(t *testing.T) {
 			path := "/Users/josh/config/dotfiles/.config/neovim"
-			list := `worktree /Users/josh/config/dotfiles
-HEAD abc123
-branch refs/heads/main
-`
 			mockPathwrap.On("EvalSymlinks", path).Return(path, nil)
-			mockGit.On("WorktreeList", path).Return(true, list, nil)
+			mockGit.On("ShowTopLevel", path).Return(true, "/Users/josh/config/dotfiles", nil)
 			mockPathwrap.On("Base", "/Users/josh/config/dotfiles").Return("dotfiles")
 			name, _ := n.Name(path)
 			assert.Equal(t, "dotfiles/_config/neovim", name)
@@ -35,7 +31,7 @@ branch refs/heads/main
 		t.Run("returns base on non-git dir", func(t *testing.T) {
 			path := "/Users/josh/.config/neovim"
 			mockPathwrap.On("EvalSymlinks", path).Return(path, nil)
-			mockGit.On("WorktreeList", path).Return(false, "", fmt.Errorf("not a git repository (or any of the parent"))
+			mockGit.On("ShowTopLevel", path).Return(false, "", fmt.Errorf("not a git repository (or any of the parent"))
 			mockPathwrap.On("Base", path).Return("neovim")
 			name, _ := n.Name(path)
 			assert.Equal(t, "neovim", name)
@@ -50,12 +46,8 @@ branch refs/heads/main
 			config := model.Config{DirLength: 1}
 			n := NewNamer(mockPathwrap, mockGit, mockHome, config)
 			resolved := "/Users/josh/dotfiles/.config/neovim"
-			list := `worktree /Users/josh/dotfiles
-HEAD abc123
-branch refs/heads/main
-`
 			mockPathwrap.On("EvalSymlinks", "/Users/josh/d/.c/neovim").Return(resolved, nil)
-			mockGit.On("WorktreeList", resolved).Return(true, list, nil)
+			mockGit.On("ShowTopLevel", resolved).Return(true, "/Users/josh/dotfiles", nil)
 			mockPathwrap.On("Base", "/Users/josh/dotfiles").Return("dotfiles")
 			name, _ := n.Name("/Users/josh/d/.c/neovim")
 			assert.Equal(t, "dotfiles/_config/neovim", name)
@@ -68,18 +60,11 @@ branch refs/heads/main
 			config := model.Config{DirLength: 1}
 			n := NewNamer(mockPathwrap, mockGit, mockHome, config)
 			resolved := "/Users/josh/projects/sesh/main"
-			list := `worktree /Users/josh/projects/sesh/.bare
-bare
-
-worktree /Users/josh/projects/sesh/main
-HEAD ba04ca494
-branch refs/heads/main
-`
 			mockPathwrap.On("EvalSymlinks", "/Users/josh/p/sesh/main").Return(resolved, nil)
-			mockGit.On("WorktreeList", resolved).Return(true, list, nil)
-			mockPathwrap.On("Base", "/Users/josh/projects/sesh").Return("sesh")
+			mockGit.On("ShowTopLevel", resolved).Return(true, "/Users/josh/projects/sesh/main", nil)
+			mockPathwrap.On("Base", "/Users/josh/projects/sesh/main").Return("main")
 			name, _ := n.Name("/Users/josh/p/sesh/main")
-			assert.Equal(t, "sesh/main", name)
+			assert.Equal(t, "main", name)
 		})
 
 		t.Run("returns base on non-git dir", func(t *testing.T) {
@@ -90,7 +75,7 @@ branch refs/heads/main
 			n := NewNamer(mockPathwrap, mockGit, mockHome, config)
 			resolved := "/Users/josh/.config/neovim"
 			mockPathwrap.On("EvalSymlinks", "/Users/josh/c/neovim").Return(resolved, nil)
-			mockGit.On("WorktreeList", resolved).Return(false, "", fmt.Errorf("not a git repository"))
+			mockGit.On("ShowTopLevel", resolved).Return(false, "", fmt.Errorf("not a git repository"))
 			mockPathwrap.On("Base", resolved).Return("neovim")
 			name, _ := n.Name("/Users/josh/c/neovim")
 			assert.Equal(t, "neovim", name)
